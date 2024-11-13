@@ -1,0 +1,110 @@
+{% load static %}
+{% block styles %}
+<link rel="stylesheet" href="{% static 'assets/css/polos.css' %}">
+{% endblock styles %}
+
+{% block content %}
+<div class="caixinha">
+    <div class="caixa-pesquisa">
+        <form method="GET" action="{% url 'polos' %}">
+            <input type="text" name="q" value="{{ search_value }}" class="campo-pesquisa" placeholder="Pesquisar polos..." />
+            <button class="butao-pesquisa" type="submit">Pesquisar</button>
+        </form>
+    </div>
+</div>
+
+<div class="caixote">
+    {% if not enderecos %}
+        <p class="nao_encontrado">Nenhum polo encontrado. Tente ajustar sua pesquisa.</p>
+    {% else %}
+    {% for cod_endereco, endereco in enderecos %}
+    <div class="poloItem itens">
+        <div class="poloContent cursosinfo">
+            <strong class="poloTitle infos">{{ endereco.denominacao }}</strong>
+            <div class="poloInfo">
+                <p><strong>Endereço:</strong> {{ endereco.endereco }}</p>
+                <p><strong>Polo:</strong> {{ endereco.polo }}</p>
+                <p><strong>Município:</strong> {{ endereco.municipio }}</p>
+                <p><strong>UF:</strong> {{ endereco.UF }}</p>
+            </div>
+        </div>
+    </div>
+{% endfor %}
+{% endif %}
+</div>
+
+
+<div class="flex justify-center space-x-2 pagination">
+    {% if enderecos.has_previous %}
+        <a href="?page={{ enderecos.previous_page_number }}" class="page-number step-links remova">&laquo; Anterior</a>
+    {% endif %}
+
+    {% for num in enderecos.paginator.page_range %}
+        {% if num == 1 or num == enderecos.paginator.num_pages %}
+            <!-- Mostra o primeiro e o último número sempre -->
+            <a href="?page={{ num }}" class="page-number step-links">{{ num }}</a>
+        {% elif num >= enderecos.number|add:'-1' and num <= enderecos.number|add:'1' %}
+            <!-- Mostra o bloco atual e um antes/depois -->
+            {% if enderecos.number == num %}
+                <span class="page-number current-page">{{ num }}</span>
+            {% else %}
+                <a href="?page={{ num }}" class="page-number step-links">{{ num }}</a>
+            {% endif %}
+        {% elif num == enderecos.number|add:'-2' or num == enderecos.number|add:'2' %}
+            <!-- Mostra "..." antes do bloco atual e depois dele, se necessário -->
+            <span class="page-number">...</span>
+        {% endif %}
+    {% endfor %}
+
+    {% if enderecos.has_next %}
+        <a href="?page={{ enderecos.next_page_number }}" class="page-number step-links remova">Próximo &raquo;</a>
+    {% endif %}
+</div>
+
+
+<div id="no-results" style="display: none;" class="nao_encontrado">Nenhum polo encontrado :(</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const searchInput = document.getElementById('caixinha');
+        const courseItems = document.querySelectorAll('.itens');
+        const noResultsDiv = document.getElementById('no-results');
+
+        searchInput.addEventListener('input', function() {
+            const searchTerm = searchInput.value.toLowerCase();
+            let hasResults = false;
+
+            courseItems.forEach(function(course) {
+                // Pega o texto de todos os elementos relevantes
+                const courseTitle = course.querySelector('.infos').textContent.toLowerCase();
+                const address = course.querySelector('.poloInfo p:nth-child(1)').textContent.toLowerCase();
+                const municipality = course.querySelector('.poloInfo p:nth-child(2)').textContent.toLowerCase();
+                const uf = course.querySelector('.poloInfo p:nth-child(3)').textContent.toLowerCase();
+
+                // Verifica se o termo de busca está em qualquer um dos textos
+                if (
+                    courseTitle.includes(searchTerm) ||
+                    address.includes(searchTerm) ||
+                    municipality.includes(searchTerm) ||
+                    uf.includes(searchTerm)
+                ) {
+                    course.style.display = 'flex';  // Mostra o item que corresponde ao termo de busca
+                    hasResults = true;
+                } else {
+                    course.style.display = 'none';  // Oculta o item que não corresponde ao termo de busca
+                }
+            });
+
+            // Exibe ou oculta a mensagem "Nenhum polo encontrado :("
+            if (hasResults) {
+                noResultsDiv.style.display = 'none';
+            } else {
+                noResultsDiv.style.display = 'block';
+            }
+        });
+    });
+</script>
+{% endblock scripts %}
